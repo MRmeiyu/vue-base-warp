@@ -10,6 +10,9 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const OptimizeCSSPlugin = require('optimize-css-assets-webpack-plugin')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+// 拷贝
+const CopyFilePlugin = require('copy-webpack-plugin')
+const outputDir = path.resolve('dist')
 
 const env = require('../config/prod.env')
 
@@ -21,6 +24,7 @@ const webpackConfig = merge(baseWebpackConfig, {
       usePostCSS: true
     })
   },
+  // 阻止生成带 .map的文件
   devtool: config.build.productionSourceMap ? config.build.devtool : false,
   output: {
     path: config.build.assetsRoot,
@@ -30,7 +34,8 @@ const webpackConfig = merge(baseWebpackConfig, {
   plugins: [
     // http://vuejs.github.io/vue-loader/en/workflow/production.html
     new webpack.DefinePlugin({
-      'process.env': env
+      'process.env': env,
+      '__DEV__': 'false'
     }),
     new UglifyJsPlugin({
       uglifyOptions: {
@@ -39,7 +44,7 @@ const webpackConfig = merge(baseWebpackConfig, {
         }
       },
       sourceMap: config.build.productionSourceMap,
-      parallel: true
+      parallel: false
     }),
     // extract css into its own file
     new ExtractTextPlugin({
@@ -64,6 +69,7 @@ const webpackConfig = merge(baseWebpackConfig, {
       filename: config.build.index,
       template: 'index.html',
       inject: true,
+      excludeChunks: ['readme'],
       minify: {
         removeComments: true,
         collapseWhitespace: true,
@@ -74,6 +80,18 @@ const webpackConfig = merge(baseWebpackConfig, {
       // necessary to consistently work with multiple chunks via CommonsChunkPlugin
       chunksSortMode: 'dependency'
     }),
+    // 新加readme
+    new HtmlWebpackPlugin({
+      filename: 'readme.html',
+      excludeChunks: ['app'],
+      template: 'index.html',
+      inject: true,
+    }),
+    // 新加server
+    new CopyFilePlugin([{
+      from: path.join(__dirname, '../server'),
+      to: outputDir
+    }]),
     // keep module.id stable when vendor modules does not change
     new webpack.HashedModuleIdsPlugin(),
     // enable scope hoisting
